@@ -9,7 +9,7 @@ import { emParalelo, getJSON, sleep } from "./lib-api.mjs";
 const cat = JSON.parse(await readFile("public/data/cartas.json", "utf8"));
 const APP_UA = "MyDeckPokemon/1.0 (+https://luanps2.github.io/mydecks-pokemon/)";
 const GH = process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {};
-const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’‘`]/g, "'").toLowerCase().trim();
+const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’‘`]/g, "'").toLowerCase().replace(/-(gx|ex)\b/g, " $1").trim();   // "Dedenne-GX" = "Dedenne GX"
 const semZeros = (n) => String(n).replace(/^0+(?=\d)/, "").toLowerCase();
 
 // 1) mapas do catálogo: coleção do pokemontcg.io → coleção da TCGdex; (coleção, número) → carta; nome → cartas

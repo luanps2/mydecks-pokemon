@@ -38,8 +38,11 @@ export const GROUP_TITLES: Record<PresetGroup, string> = {
 const FILES = ["decks-personagens", "decks-oficiais", "decks-meta"];
 let cache: Promise<Preset[]> | null = null;
 export function loadPresets(): Promise<Preset[]> {
+  // cada arquivo falha sozinho (ainda não gerado, sem internet): os outros grupos aparecem assim mesmo
   return cache || (cache = Promise.all(FILES.map((f) => fetch(`${import.meta.env.BASE_URL}data/${f}.json`)
-    .then((r) => (r.ok ? (r.json() as Promise<Preset[]>) : []), () => [] as Preset[])))
+    .then((r) => (r.ok ? r.json() : []))
+    .then((d: unknown) => (Array.isArray(d) ? (d as Preset[]) : []))
+    .catch(() => [] as Preset[])))
     .then((all) => all.flat()));
 }
 

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Hit } from "../types";
-import { useCatalog } from "../lib/catalog";
+import { useCatalog, type Catalog } from "../lib/catalog";
 import { cardSources } from "../lib/images";
 import { GROUP_TITLES, boxSrc, collectionPresets, loadPresets, presetCards, presetCover, presetTotals, type Preset, type PresetGroup } from "../lib/presets";
+import { seriePt } from "../lib/labels";
 import { brl, norm } from "../lib/util";
 import { useCollection } from "../state/collection";
 import { useToast } from "../state/toast";
@@ -13,6 +14,12 @@ import { Portrait } from "./Portrait";
 import { PriceTag } from "./PriceTag";
 import { QtyStepper } from "./QtyStepper";
 
+/** série da maioria das cartas do deck (a primeira pode ser uma reimpressão de outra série) */
+function mainSerie(p: Preset, cat: Catalog): string {
+  const n = new Map<string, number>();
+  for (const [id, q] of p.cartas || []) { const s = cat.byId.get(id)?.set.s; if (s) n.set(s, (n.get(s) || 0) + q); }
+  return [...n].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+}
 const ORDER: PresetGroup[] = ["personagens", "oficiais", "meta", "campeoes", "colecoes"];
 
 /* ===== Decks prontos: personagens do anime, decks oficiais, meta atual, campeões do Mundial e coleções =====
@@ -77,15 +84,24 @@ export function Presets({ open, onClose, initial, onOpenCard }: {
   const close = () => { setSel(null); onClose(); };
   let body;
   if (!sel) {
-    const groups = ORDER.map((g) => ({ g, items: (presets || []).filter((p) => p.grupo === g) })).filter((x) => x.items.length);
+    // decks oficiais separados por série (são muitos); os outros grupos como estão
+    const groups: { g: string; title: string; items: Preset[] }[] = [];
+    for (const g of ORDER) for (const p of presets || []) {
+      if (p.grupo !== g) continue;
+      const s = g === "oficiais" && cat ? mainSerie(p, cat) : "";
+      const title = s ? `${GROUP_TITLES[g]} – ${seriePt(s)}` : GROUP_TITLES[g];
+      let x = groups.find((y) => y.title === title);
+      if (!x) groups.push((x = { g, title, items: [] }));
+      x.items.push(p);
+    }
     body = (
       <>
         <h4>Decks prontos</h4>
         <p className="meta">Escolha um tema para criar um deck já com as cartas e as cópias. Antes de criar, dá para tirar as que você não quiser, mudar as cópias e o nome.</p>
         {!presets && <PokeLoader />}
-        {groups.map(({ g, items }) => (
-          <div key={g}>
-            <p className="reltitle">{GROUP_TITLES[g]} <small>{items.length}</small></p>
+        {groups.map(({ title, items }) => (
+          <div key={title}>
+            <p className="reltitle">{title} <small>{items.length}</small></p>
             <div className="presets">
               {items.map((p) => {
                 const t = presetTotals(p, cat!);

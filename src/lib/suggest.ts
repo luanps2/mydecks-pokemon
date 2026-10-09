@@ -8,7 +8,9 @@ import { norm, readJSON, writeJSON } from "./util";
 let cache: Promise<string[]> | null = null;
 export function loadPopular(): Promise<string[]> {
   return cache || (cache = fetch(import.meta.env.BASE_URL + "data/populares.json")
-    .then((r) => (r.ok ? (r.json() as Promise<string[]>) : []), () => []));
+    .then((r) => (r.ok ? r.json() : []))
+    .then((d: unknown) => (Array.isArray(d) ? (d as string[]) : []))
+    .catch(() => [] as string[]));
 }
 export function popularPool(cat: Catalog, ids: string[]): CatCard[] {
   const list = ids.map((id) => cat.byId.get(id)).filter((c): c is CatCard => !!c && (c.imgPt || c.imgEn));

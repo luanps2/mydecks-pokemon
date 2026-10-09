@@ -5,6 +5,7 @@ import { CardTile, ICON_TRASH } from "./components/CardTile";
 import { Catalog, presetCatalogQuery } from "./components/Catalog";
 import { DeckPicker } from "./components/DeckPicker";
 import { DetailModal, type DetailView } from "./components/DetailModal";
+import { ExportDialog } from "./components/ExportDialog";
 import { GlobalBehaviors } from "./components/GlobalBehaviors";
 import { Hero } from "./components/Hero";
 import { Presets } from "./components/Presets";
@@ -346,6 +347,7 @@ function Main() {
         canPrev={idx > 0} canNext={idx >= 0 && idx < order.length - 1} onOpenRelated={openHits} />
       <Catalog open={dlg === "catalog"} onClose={() => closeDlg("catalog")} defaultList={tabOk} onPresets={() => openPresets()} footer={bottomNav} />
       <ManageLists open={dlg === "lists"} onClose={() => closeDlg("lists")} onPresets={() => openPresets()} />
+      <ExportDialog open={over === "export"} onClose={() => closeOver("export")} />
       <Presets open={over === "presets"} initial={presetInit} onOpenCard={openHits} onClose={() => closeOver("presets")} />
       <DetailModal view={det} onClose={() => setDet(null)} defaultDest={tabOk}
         onIndex={(i) => setDet((d) => (d ? { ...d, index: Math.max(0, Math.min(i, d.items.length - 1)) } : d))} />

@@ -8,7 +8,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { emParalelo, getJSON } from "./lib-api.mjs";
 
 const cat = JSON.parse(await readFile("public/data/cartas.json", "utf8"));
-const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’‘`]/g, "'").toLowerCase().trim();
+const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’‘`]/g, "'").toLowerCase().replace(/-(gx|ex)\b/g, " $1").trim();   // "Dedenne-GX" = "Dedenne GX"
 const semZeros = (n) => String(n).replace(/^0+(?=\d)/, "").toLowerCase();
 
 // siglas das coleções (as impressas na carta, usadas pelo Pokémon TCG Live e pela Limitless) → coleção da TCGdex

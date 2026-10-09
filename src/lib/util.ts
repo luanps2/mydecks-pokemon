@@ -1,6 +1,6 @@
-/* Texto sem acentos e em minúsculas, para comparar nomes */
+/* Texto sem acentos e em minúsculas, para comparar nomes (apóstrofo curvo ’ = reto ': a TCGdex usa os dois) */
 export const norm = (s: unknown) =>
-  String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’‘`]/g, "'").toLowerCase();
 
 export const uuid = () => crypto.randomUUID();
 export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
