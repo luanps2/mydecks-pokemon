@@ -6,7 +6,7 @@ import { getLocalImage } from "./localImages";
    Fonte: servidor de imagens da TCGdex (assets.tcgdex.net/{idioma}/{série}/{coleção}/{número}/{low|high}.webp).
    - low (~245×337, ~15 KB): grades, catálogo, faixas. Nunca usar a grande em centenas de cartas (estoura a memória do celular).
    - high (~600×825, ~60 KB): janela da carta, carta ampliada e prévia ao passar o mouse.
-   Português primeiro (cartas impressas no Brasil) quando existe; inglês de reserva. Com o espelho próprio no Cloudflare R2
+   Português primeiro (cartas impressas no Brasil) quando existe; inglês de reserva; por último, a imagem do pokemontcg.io. Com o espelho próprio no Cloudflare R2
    configurado (VITE_R2_URL), ele vem antes da TCGdex. */
 const R2 = (import.meta.env.VITE_R2_URL || "").replace(/\/$/, "");
 export type ImgSize = "low" | "high";
@@ -18,12 +18,14 @@ export function cardSources(c: CatCard, size: ImgSize, lang: ImageLang | null = 
   const langs: ImageLang[] = [];
   const want = lang || "pt";
   for (const l of [want, want === "pt" ? "en" : "pt"] as ImageLang[]) if (l === "pt" ? c.imgPt : c.imgEn) langs.push(l);
-  if (!langs.length) langs.push(c.imgEn ? "en" : "pt");   // sem a informação: tenta assim mesmo
+  if (!langs.length && !c.set.pc) langs.push("en");   // a TCGdex diz que não tem imagem e não há reserva: tenta assim mesmo
   const out: string[] = [];
   for (const l of langs) {
     if (R2) out.push(`${R2}/img/${l}/${size === "low" ? 300 : 700}/${c.id}.webp`);
     out.push(tcgdex(c, l, size));
   }
+  // reserva: imagem em inglês do pokemontcg.io (tem cartas que faltam na TCGdex)
+  if (c.set.pc) out.push(`https://images.pokemontcg.io/${c.set.pc}/${c.num.replace(/^0+(?=\d)/, "")}${size === "high" ? "_hires" : ""}.png`);
   return out;
 }
 

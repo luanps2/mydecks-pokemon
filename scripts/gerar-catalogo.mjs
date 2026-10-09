@@ -59,6 +59,10 @@ const TIPOS = { Grass: "G", Fire: "R", Water: "W", Lightning: "L", Psychic: "P",
 const TIPOS_PT = { Planta: "G", Fogo: "R", "Água": "W", "Elétrico": "L", "Psíquico": "P", Lutador: "F", Sombrio: "D", Metal: "M", Fada: "Y", "Dragão": "N", Incolor: "C" };
 const CAT = { Pokemon: 0, "Pokémon": 0, Trainer: 1, Treinador: 1, Energy: 2, Energia: 2 };
 const setIdx = new Map(validos.map((s, i) => [s.id, i]));
+/* A TCGdex em português deixa o símbolo de energia em inglês em alguns nomes ("Energia Psychic Básica"): traduz */
+const SIMBOLO_PT = { Grass: "de Grama", Fire: "de Fogo", Water: "de Água", Lightning: "Elétrica", Psychic: "Psíquica", Fighting: "de Luta",
+  Darkness: "de Escuridão", Metal: "de Metal", Fairy: "de Fada", Dragon: "de Dragão", Colorless: "Incolor" };
+const nomePtLimpo = (n) => n.replace(/\b(Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal|Fairy|Dragon|Colorless)\b/g, (m) => SIMBOLO_PT[m]);
 const cartas = [];
 let semDados = 0;
 alvos.forEach((a, i) => {
@@ -69,7 +73,7 @@ alvos.forEach((a, i) => {
   const tipos = (d.types || []).map((t) => TIPOS[t] || TIPOS_PT[t] || "").join("");
   const legal = (d.legal?.standard ? 1 : 0) | (d.legal?.expanded ? 2 : 0);
   const img = (a.lang === "en" && a.img ? 1 : 0) | (pt?.image ? 2 : 0);
-  const nomePt = pt && pt.name !== d.name ? pt.name : "";
+  const nomePt = pt && pt.name !== d.name ? nomePtLimpo(pt.name) : "";
   cartas.push([
     a.id, d.name, nomePt, setIdx.get(a.set.id), d.localId, CAT[d.category] ?? 1, tipos, cod("stage", d.stage), d.hp || 0,
     cod("rarity", d.rarity === "None" ? "" : d.rarity), cod("sub", d.trainerType || d.energyType), cod("suffix", d.suffix), d.regulationMark || "",
@@ -79,11 +83,21 @@ alvos.forEach((a, i) => {
 console.log(`Cartas no catálogo: ${cartas.length} (sem dados: ${semDados})`);
 for (const k of ["stage", "rarity", "sub", "suffix"]) console.log(k + ":", dic[k].slice(1).join(" | "));
 
+// imagens de reserva: o pokemontcg.io tem imagens de muitas cartas que a TCGdex não tem. Liga as coleções pela sigla
+// (ptcgoCode) ou pelo nome. Essa API recusa User-Agent de navegador (500/502): vai sem cabeçalho.
+const ptcg = new Map();
+try {
+  const r = await getJSON("https://api.pokemontcg.io/v2/sets?pageSize=250", { ua: "" });
+  for (const s of r.data) { if (s.ptcgoCode) ptcg.set("ab:" + s.ptcgoCode.toUpperCase(), s.id); ptcg.set("n:" + s.name.toLowerCase(), s.id); }
+  console.log("Coleções do pokemontcg.io:", r.data.length);
+} catch (e) { console.log("pokemontcg.io falhou (sem imagens de reserva):", e.message); }
+const ptcgDe = (s) => ptcg.get("n:" + String(s.name).toLowerCase()) || (s.abbreviation?.official ? ptcg.get("ab:" + s.abbreviation.official.toUpperCase()) : "") || "";
 const sets = validos.map((s) => ({
   id: s.id, s: s.serie?.id || "", en: s.soPt ? "" : s.name, pt: setsPt.get(s.id)?.name || "", d: s.releaseDate || "",
   ab: s.abbreviation?.official || s.tcgOnline || "", n: s.cardCount?.official || 0, t: s.cardCount?.total || 0,
-  logo: s.logo ? 1 : 0, sym: s.symbol ? 1 : 0,
+  logo: s.logo ? 1 : 0, sym: s.symbol ? 1 : 0, pc: s.soPt ? "" : ptcgDe(s),
 }));
+console.log("Coleções ligadas ao pokemontcg.io:", sets.filter((s) => s.pc).length, "de", sets.length);
 const series = [];
 for (const s of validos) if (s.serie && !series.some((x) => x.id === s.serie.id))
   series.push({ id: s.serie.id, en: seriesEn.find((x) => x.id === s.serie.id)?.name || s.serie.name, pt: ptSerie.get(s.serie.id) || "" });

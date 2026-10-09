@@ -1108,8 +1108,8 @@ dialog::-webkit-scrollbar-track,.psel-scroll::-webkit-scrollbar-track,.catgrid::
 .flavor{font-size:.86rem;font-style:italic;color:var(--muted);margin:0 0 12px}
 .legal{display:inline-flex;gap:10px;flex-wrap:wrap}
 .legal b{font-weight:600;font-size:.86rem}
-.legal .ok{color:var(--green-hover)}
-.legal .no{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent)}
+.legal .lg-ok{color:var(--green-hover)}
+.legal .lg-no{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent)}
 dd small{color:var(--muted)}
 /* regras do formato no título do deck (aviso, não bloqueia) */
 .rules{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
@@ -1152,3 +1152,16 @@ h3 small{font:500 .74rem var(--mono);letter-spacing:0;color:var(--muted);text-tr
 .btn.success{background:var(--green);color:var(--green-ink);border-color:var(--green);font-weight:600}
 .dlg button.success:disabled{opacity:.45}
 .deck-sec h2{flex-wrap:wrap}
+.ver-w .ph{font-size:.56rem;padding:4px;line-height:1.2}
+.rowc .names b .qty-x{display:inline}
+/* botão "Filtros" da tela dos decks: só no celular (no computador os seletores ficam à mostra) */
+.tfilt{display:none}
+@media (max-width:640px){
+  .toolbar{display:grid;grid-template-columns:1fr auto;gap:10px}
+  .toolbar .chips{grid-column:1/-1}
+  .tfilt{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:500 .9rem var(--body);cursor:pointer;justify-self:start}
+  .tfilt svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  .tfilt[aria-expanded="true"]{background:var(--surface-2);border-color:var(--ink-2)}
+  .toolbar .tsel{display:none;grid-column:1/-1;grid-row:3}
+  .toolbar.fopen .tsel{display:grid}
+}

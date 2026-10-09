@@ -38,7 +38,8 @@ export function filterCards(all: CatCard[], f: CatFilters, search: (q: string, p
   if (f.q.trim()) out = search(f.q, out);
   const byDate = (a: CatCard, b: CatCard) => a.set.d.localeCompare(b.set.d) || a.set.id.localeCompare(b.set.id) || a.num.localeCompare(b.num, undefined, { numeric: true });
   switch (f.sort) {
-    case "new": out = f.q.trim() ? rankByName(out, f.q) : [...out].sort((a, b) => byDate(b, a)); break;
+    // as mais novas primeiro, mas as cartas sem imagem nenhuma (ex.: coleções comemorativas recém-saídas) vão para o fim
+    case "new": out = f.q.trim() ? rankByName(out, f.q) : [...out].sort((a, b) => +!(a.imgPt || a.imgEn || a.set.pc) - +!(b.imgPt || b.imgEn || b.set.pc) || byDate(b, a)); break;
     case "old": out = [...out].sort(byDate); break;
     case "name": out = [...out].sort((a, b) => a.pt.localeCompare(b.pt, "pt")); break;
     case "priceHi": out = [...out].sort((a, b) => b.lo - a.lo); break;

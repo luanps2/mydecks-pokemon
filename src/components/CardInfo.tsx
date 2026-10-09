@@ -35,7 +35,7 @@ export function CardInfo({ card, pt, en, loading }: { card: CatCard; pt: ApiCard
   add("Raridade", rarityPt(card.rarity));
   add("Ilustrador", card.illus);
   add("Regulação", card.reg ? `Marca ${card.reg}` : "");
-  add("Legalidade", <span className="legal"><b className={card.std ? "ok" : "no"}>{card.std ? "✓" : "✗"} Padrão</b> <b className={card.exp ? "ok" : "no"}>{card.exp ? "✓" : "✗"} Expandido</b></span>);
+  add("Legalidade", <span className="legal"><b className={card.std ? "lg-ok" : "lg-no"}>{card.std ? "✓" : "✗"} Padrão</b> <b className={card.exp ? "lg-ok" : "lg-no"}>{card.exp ? "✓" : "✗"} Expandido</b></span>);
 
   const ab = main?.abilities || [], atk = main?.attacks || [];
   const effect = main?.effect || "";

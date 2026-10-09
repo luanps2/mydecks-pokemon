@@ -93,6 +93,7 @@ function Main() {
   const [stage, setStage] = useState<StageFilter>("");
   const [sub, setSub] = useState<SubFilter>("");
   const [band, setBand] = useState<PriceBand>("");   // filtro por valor de mercado
+  const [fOpen, setFOpen] = useState(false);   // celular: filtros de tipo/estágio/subtipo/valor atrás do botão "Filtros"
   const [view, setView] = useState<"grid" | "rows">(() => readJSON("mdp-modo", "grid"));
   const [cardId, setCardId] = useState<string | null>(null);
   const [det, setDet] = useState<DetailView | null>(null);
@@ -222,7 +223,7 @@ function Main() {
         </div>
       </header>
 
-      <div className="wrap toolbar">
+      <div className={"wrap toolbar" + (fOpen ? " fopen" : "")}>
         <div className="chips" role="group" aria-label="Filtrar por tipo de carta">
           {FILTERS.map(([k, l]) => <button key={k} type="button" className="chip" aria-pressed={filter === k} onClick={() => setFilter(k)}>{l}</button>)}
         </div>
@@ -240,6 +241,10 @@ function Main() {
             {PRICE_BANDS.map(([k, l]) => <option key={k} value={k}>{k ? l : "Valor: todos"}</option>)}
           </select>
         </span>
+        <button type="button" className="tfilt" aria-expanded={fOpen} onClick={() => setFOpen(!fOpen)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg>Filtros
+          {[type, stage, sub, band].filter(Boolean).length > 0 && <b className="badge">{[type, stage, sub, band].filter(Boolean).length}</b>}
+        </button>
         <span className="vtoggle" role="group" aria-label="Modo de exibição">
           {([["grid", "Imagens", "Ver com imagens"], ["rows", "Lista", "Ver em lista, sem imagens"]] as const).map(([v, l, t]) => (
             <button key={v} type="button" title={t} aria-pressed={view === v} onClick={() => { setView(v); writeJSON("mdp-modo", v); }}>

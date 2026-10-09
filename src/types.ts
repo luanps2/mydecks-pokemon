@@ -20,6 +20,8 @@ export interface SetInfo {
   t: number;
   logo: number;
   sym: number;
+  /** coleção equivalente no pokemontcg.io (imagens de reserva) */
+  pc?: string;
 }
 export interface SerieInfo { id: string; en: string; pt: string }
 

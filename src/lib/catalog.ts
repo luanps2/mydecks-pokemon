@@ -92,12 +92,14 @@ export function searchCards(c: Catalog, q: string, pool: CatCard[] = c.cards): C
   });
 }
 
-/** Ordena resultados de busca: nome exato primeiro, depois começando pela busca, e as mais novas antes */
+/** Ordena resultados de busca: nome exato primeiro, depois começando pela busca; dentro disso, as que têm imagem e preço
+    e as mais novas antes (coleções comemorativas com dezenas de "Pikachu" sem imagem ficavam na frente) */
 export function rankByName(list: CatCard[], q: string): CatCard[] {
   const n = norm(q.trim());
   const score = (c: CatCard) => {
     const a = norm(c.pt), b = norm(c.en);
-    return a === n || b === n ? 0 : a.startsWith(n) || b.startsWith(n) ? 1 : 2;
+    const name = a === n || b === n ? 0 : a.startsWith(n) || b.startsWith(n) ? 1 : 2;
+    return name * 4 + (c.imgPt || c.imgEn ? 0 : 2) + (c.lo > 0 ? 0 : 1);
   };
   return [...list].sort((a, b) => score(a) - score(b) || b.set.d.localeCompare(a.set.d));
 }
