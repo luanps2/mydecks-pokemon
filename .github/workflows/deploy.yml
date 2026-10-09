@@ -1,0 +1,72 @@
+# Monta o site e publica no GitHub Pages a cada push na main e todo dia de manhã.
+# Antes do build, gera de novo o catálogo com os preços e a cotação do dia (sem gravar no repositório:
+# pushes feitos pelo GITHUB_TOKEN não disparariam outros workflows). Se a API falhar, fica o arquivo do repositório.
+name: Publicar no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: [".github/dados-pedido.txt", ".github/amostras-pedido.txt", "CLAUDE.md"]
+  schedule:
+    - cron: "17 9 * * *"   # todo dia às 6h17 (Brasília): publica de novo com os preços e a cotação do dia
+  workflow_dispatch:   # permite publicar de novo pelo botão "Run workflow" na aba Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # catálogo, valor de mercado e cotação do dia: gerado uma vez por dia e guardado no cache do GitHub
+      # (os outros pushes do mesmo dia usam o do cache). Se a API falhar, fica o arquivo do repositório.
+      - id: dia
+        run: echo "dia=$(TZ=America/Sao_Paulo date +%F)" >> "$GITHUB_OUTPUT"
+      - id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: public/data/cartas.json
+          key: catalogo-${{ steps.dia.outputs.dia }}
+      - name: Catálogo e preços do dia
+        id: gerar
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cp public/data/cartas.json /tmp/cartas-reserva.json
+          if node scripts/gerar-catalogo.mjs; then echo "ok=1" >> "$GITHUB_OUTPUT"
+          else echo "Catálogo não atualizado hoje; mantido o arquivo do repositório."; cp /tmp/cartas-reserva.json public/data/cartas.json; fi
+      - if: steps.gerar.outputs.ok == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: public/data/cartas.json
+          key: catalogo-${{ steps.dia.outputs.dia }}
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
+          VITE_R2_URL: ${{ secrets.R2_PUBLIC_URL }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
