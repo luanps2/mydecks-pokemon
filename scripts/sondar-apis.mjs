@@ -92,3 +92,34 @@ if (quer("fandom")) {
   await get("https://bulbapedia.bulbagarden.net/w/api.php?action=query&titles=Ash_Ketchum&prop=pageimages|images&imlimit=60&pithumbsize=600&format=json", { n: 3000 });
   await get("https://archives.bulbagarden.net/w/api.php?action=query&list=allimages&aiprefix=Ash&ailimit=20&format=json", { n: 2000 });
 }
+
+if (quer("fontes2")) {
+  // detalhes de coleção (abreviação), coleção básica em português, tempo de muitas cartas
+  await get("https://api.tcgdex.net/v2/en/sets/sv03.5", { n: 700 });
+  await get("https://api.tcgdex.net/v2/en/sets/base1", { n: 700 });
+  await get("https://api.tcgdex.net/v2/pt/sets/base1", { n: 700 });
+  await get("https://api.tcgdex.net/v2/pt/sets/30th", { n: 700 });
+  await get("https://api.tcgdex.net/v2/en/sets/me02.5", { n: 500 });
+  const lst = await (await fetch("https://api.tcgdex.net/v2/en/cards")).json();
+  const amostra = lst.slice(5000, 5400).map((c) => c.id);
+  let t = Date.now(), ok = 0, falhas = 0, i = 0;
+  await Promise.all(Array.from({ length: 16 }, async () => {
+    while (i < amostra.length) { const id = amostra[i++]; const r = await fetch("https://api.tcgdex.net/v2/en/cards/" + id); if (r.ok) { ok++; await r.text(); } else falhas++; }
+  }));
+  console.log(`\n### 400 cartas com 16 em paralelo: ${Date.now() - t} ms, ok ${ok}, falhas ${falhas}`);
+  await get("https://api.tcgdex.net/v2/graphql", { method: "POST", headers: { "Content-Type": "application/json" }, n: 1500,
+    body: JSON.stringify({ query: '{ cards(pagination:{page:1,itemsPerPage:3}) { id name category hp types stage rarity regulationMark evolveFrom dexId set { id } legal { standard expanded } } }' }) });
+  // decks oficiais: catálogo do TCGplayer (tcgcsv) e o repositório de dados do pokemontcg.io
+  await get("https://tcgcsv.com/tcgplayer/3/groups", { n: 1500 });
+  await get("https://api.github.com/repos/PokemonTCG/pokemon-tcg-data/contents/decks/en", { n: 3000 });
+  await get("https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/decks/en/base1.json", { n: 1500 });
+  // campeões mundiais na Limitless (site principal)
+  await get("https://limitlesstcg.com/tournaments?type=worlds&time=all", { n: 300 });
+  const h = await (await fetch("https://limitlesstcg.com/tournaments?time=all&show=500", { headers: { "User-Agent": UAS.chrome } })).text();
+  console.log("\n### links de torneios (World):", [...h.matchAll(/href="(\/tournaments\/\d+)"[^>]*>([^<]*World[^<]*)</g)].map((m) => m[1] + " " + m[2]).slice(0, 40).join(" | "));
+  console.log("trecho:", [...h.matchAll(/<tr[^>]*data-[^>]*>/g)].slice(0, 3).map((m) => m[0]).join("\n"));
+  // retratos no Pokémon Fandom: imagem principal da página (original)
+  for (const t of ["Ash Ketchum", "Misty", "Brock", "Gary Oak", "Jessie", "Dawn", "May", "Serena", "Goh", "Liko", "Roy", "Red"])
+    await get("https://pokemon.fandom.com/api.php?action=query&prop=pageimages&piprop=original|name&format=json&titles=" + encodeURIComponent(t), { n: 500 });
+  await get("https://pokemon.fandom.com/api.php?action=query&list=allimages&aiprefix=Ash_JN&aiprop=url|size|mime&ailimit=20&format=json", { n: 2500 });
+}
