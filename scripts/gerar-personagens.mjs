@@ -1,7 +1,7 @@
 /* Gera public/data/decks-personagens.json a partir de scripts/personagens.mjs e do catálogo (public/data/cartas.json).
    Roda sem internet: node scripts/gerar-personagens.mjs
    Para cada nome escolhe a impressão: a coleção pedida (@id) ou, nesta ordem, com imagem em português, com imagem,
-   legal no Expandido e a mais nova. Confere 60 cartas e no máximo 4 cópias com o mesmo nome (Energia Básica livre). */
+   legal no Expandido, a mais barata e a mais nova. Confere 60 cartas e no máximo 4 cópias com o mesmo nome (Energia Básica livre). */
 import { readFile, writeFile } from "node:fs/promises";
 import { PERSONAGENS } from "./personagens.mjs";
 
@@ -20,7 +20,9 @@ function escolher(nome, colecao) {
   const set = (c) => cat.sets[c[3]];
   const nota = (c) => (colecao && set(c).id === colecao ? 1000 : 0) + (c[16] & 2 ? 8 : 0) + (c[16] & 1 ? 4 : set(c).pc ? 2 : 0)
     + (c[13] & 2 ? 2 : 0) + (c[5] === 2 && SV_ENERGIA.has(set(c).id) ? 3 : 0);
-  return [...lista].sort((a, b) => nota(b) - nota(a) || set(b).d.localeCompare(set(a).d))[0];
+  // empate: a versão mais barata (as raras de ilustração deixariam o deck caro), depois a mais nova
+  const preco = (c) => (c[17] > 0 ? c[17] : 1e6);
+  return [...lista].sort((a, b) => nota(b) - nota(a) || preco(a) - preco(b) || set(b).d.localeCompare(set(a).d))[0];
 }
 
 let erros = 0;

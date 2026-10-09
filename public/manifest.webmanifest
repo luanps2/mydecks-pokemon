@@ -1,0 +1,21 @@
+{
+  "name": "MyDeck Pokémon",
+  "short_name": "MyDeck",
+  "description": "Sua coleção e seus decks de Pokémon TCG: catálogo completo em português, decks prontos e o valor de mercado em reais.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#111113",
+  "theme_color": "#111113",
+  "categories": ["entertainment", "games", "utilities"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

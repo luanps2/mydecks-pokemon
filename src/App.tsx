@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CatCard, EnergyType, Hit, UserCard } from "./types";
 import { CardModal } from "./components/CardModal";
+import { Community } from "./components/Community";
+import { LoginDialog, PasswordRecovery } from "./components/LoginDialog";
 import { CardTile, ICON_TRASH } from "./components/CardTile";
 import { Catalog, presetCatalogQuery } from "./components/Catalog";
+import { Dashboard } from "./components/Dashboard";
 import { DeckPicker } from "./components/DeckPicker";
 import { DetailModal, type DetailView } from "./components/DetailModal";
 import { ExportDialog } from "./components/ExportDialog";
 import { GlobalBehaviors } from "./components/GlobalBehaviors";
 import { Hero } from "./components/Hero";
+import { InstallApp } from "./components/InstallApp";
 import { Presets } from "./components/Presets";
 import { Suggestions } from "./components/Suggestions";
 import { Logo } from "./components/Logo";
@@ -21,6 +25,7 @@ import { STAGE_FILTERS, SUB_FILTERS, TYPES, TYPE_ORDER, kindLine, matchStage, ma
 import { localImgSignal, openLocalImages } from "./lib/localImages";
 import { PRICE_BANDS, inBand, type PriceBand } from "./lib/prices";
 import { checkDeck } from "./lib/rules";
+import { syncMyProfile } from "./lib/social";
 import { supabase } from "./lib/supabase";
 import { brl, copies, norm, readJSON, writeJSON } from "./lib/util";
 import { CollectionProvider, LOGIN_EVENT, numbersOf, useCollection } from "./state/collection";
@@ -101,9 +106,16 @@ function Main() {
   const [view, setView] = useState<"grid" | "rows">(() => readJSON("mdp-modo", "grid"));
   const [cardId, setCardId] = useState<string | null>(null);
   const [det, setDet] = useState<DetailView | null>(null);
-  const [dlg, setDlg] = useState<"" | "login" | "catalog" | "lists" | "account" | "community" | "dash">("");
+  const [dlg, setDlg] = useState<"" | "login" | "catalog" | "lists" | "account" | "community" | "dash">(() => (location.hash.startsWith("#treinador/") ? "community" : ""));
   // montar decks precisa de conta: quem tenta sem login recebe a janela de criar conta com o aviso
-  const [, setNeedLogin] = useState(false);
+  const [needLogin, setNeedLogin] = useState(false);
+  // Treinadores: perfil aberto (null = todos). O endereço #treinador/{id} abre direto no perfil (link compartilhável)
+  const [profileId, setProfileId] = useState<string | null>(() => /^#treinador\/([\w-]+)/.exec(location.hash)?.[1] || null);
+  const openCommunity = useCallback((id: string | null) => { setProfileId(id); setDlg("community"); }, []);
+  useEffect(() => {
+    const want = dlg === "community" && profileId ? "#treinador/" + profileId : "";
+    if (location.hash !== want && (want || location.hash.startsWith("#treinador/"))) history.replaceState(null, "", location.pathname + location.search + want);
+  }, [dlg, profileId]);
   useEffect(() => {
     const f = () => setNeedLogin(true);
     window.addEventListener(LOGIN_EVENT, f);
@@ -120,6 +132,11 @@ function Main() {
   const pickTab = (id: string) => { setTab(id); writeJSON("mdp-deck", id); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
   useEffect(() => { void openLocalImages(); }, []);
+  // ao entrar: guarda o nome e a foto do Google no perfil (Treinadores)
+  const uid = mode.kind === "cloud" ? mode.userId : "";
+  useEffect(() => {
+    if (mode.kind === "cloud") void syncMyProfile(mode.userId, mode.name, mode.avatar, mode.email).catch(() => {});
+  }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const lists = useMemo(() => [...col.lists].sort((a, b) => a.position - b.position), [col.lists]);
   const byList = useMemo(() => {
@@ -176,7 +193,7 @@ function Main() {
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z" /></svg><span>Início</span>
       </button>
       {supabase ? (
-        <button type="button" aria-current={dlg === "community" ? "page" : undefined} onClick={() => setDlg("community")}>{ICON_PEOPLE}<span>Treinadores</span></button>
+        <button type="button" aria-current={dlg === "community" ? "page" : undefined} onClick={() => openCommunity(null)}>{ICON_PEOPLE}<span>Treinadores</span></button>
       ) : (
         <button type="button" aria-current={over === "presets" ? "page" : undefined} onClick={() => openPresets()}>{ICON_STAR}<span>Prontos</span></button>
       )}
@@ -210,10 +227,10 @@ function Main() {
             <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar carta: nome em português ou inglês, ou número" aria-label="Buscar carta" />
           </label>
           <div className="top-end">
-            {supabase && <button type="button" className="hbtn" onClick={() => setDlg("community")} title="Ver os outros treinadores e os decks deles">{ICON_PEOPLE}<span>Treinadores</span></button>}
+            {supabase && <button type="button" className="hbtn" onClick={() => openCommunity(null)} title="Ver os outros treinadores e os decks deles">{ICON_PEOPLE}<span>Treinadores</span></button>}
             <div className="acct">
               {mode.kind === "cloud"
-                ? <AccountMenu name={mode.name} email={mode.email} avatar={mode.avatar} onDash={() => setDlg("dash")} onProfile={() => setDlg("community")} onSignOut={() => void signOut()} />
+                ? <AccountMenu name={mode.name} email={mode.email} avatar={mode.avatar} onDash={() => setDlg("dash")} onProfile={() => openCommunity(mode.userId)} onSignOut={() => void signOut()} />
                 : supabase && <button type="button" className="hbtn" onClick={() => setDlg("login")}>{ICON_USER}<span>Entrar</span></button>}
             </div>
           </div>
@@ -282,6 +299,7 @@ function Main() {
             <button type="button" className="btn ghost" onClick={() => setDlg("login")}>Entrar</button>
           </div>
         )}
+        <InstallApp />
         {mode.kind === "cloud" && localCount > 0 && !hideUpload && (
           <div className="banner">
             <span>Você tem <b>{localCount}</b> cartas salvas só neste navegador. Quer enviar para a sua conta?</span>
@@ -347,17 +365,22 @@ function Main() {
         canPrev={idx > 0} canNext={idx >= 0 && idx < order.length - 1} onOpenRelated={openHits} />
       <Catalog open={dlg === "catalog"} onClose={() => closeDlg("catalog")} defaultList={tabOk} onPresets={() => openPresets()} footer={bottomNav} />
       <ManageLists open={dlg === "lists"} onClose={() => closeDlg("lists")} onPresets={() => openPresets()} />
+      <Dashboard open={dlg === "dash"} onClose={() => closeDlg("dash")} />
       <ExportDialog open={over === "export"} onClose={() => closeOver("export")} />
       <Presets open={over === "presets"} initial={presetInit} onOpenCard={openHits} onClose={() => closeOver("presets")} />
       <DetailModal view={det} onClose={() => setDet(null)} defaultDest={tabOk}
         onIndex={(i) => setDet((d) => (d ? { ...d, index: Math.max(0, Math.min(i, d.items.length - 1)) } : d))} />
+      <Community open={dlg === "community"} onClose={() => closeDlg("community")} profileId={profileId} onProfile={setProfileId}
+        onOpenCards={openHits} onManage={() => setDlg("lists")} onLogin={() => setDlg("login")} />
+      {supabase && <LoginDialog key={needLogin ? "conta" : "entrar"} open={dlg === "login" || (needLogin && mode.kind !== "cloud")} needed={needLogin} onClose={() => { setNeedLogin(false); closeDlg("login"); }} />}
+      {supabase && <PasswordRecovery />}
       {mode.kind === "cloud" && (
         <Modal open={dlg === "account"} onClose={() => closeDlg("account")} label="Sua conta">
           <h4>Sua conta</h4>
           <p className="meta">Conectado como <b>{mode.email}</b>. Seus decks ficam salvos na conta e aparecem em qualquer aparelho.</p>
           <div className="row">
             <button type="button" onClick={() => setDlg("dash")}>Meu painel</button>
-            <button type="button" onClick={() => setDlg("community")}>Meu perfil de treinador</button>
+            <button type="button" onClick={() => openCommunity(mode.userId)}>Meu perfil de treinador</button>
             <button type="button" onClick={() => { setDlg(""); setOver("export"); }}>Exportar decks</button>
             <button type="button" className="danger" onClick={() => { setDlg(""); void signOut(); }}>Sair</button>
           </div>
