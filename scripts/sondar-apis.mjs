@@ -20,8 +20,8 @@ async function get(url, { ua = "chrome", n = 1500, method = "GET", body, headers
     return null;
   }
 }
-const grupo = process.argv[2] || "tudo";
-const quer = (g) => grupo === "tudo" || grupo === g;
+const grupos = process.argv.slice(2).length ? process.argv.slice(2) : ["tudo"];
+const quer = (g) => grupos.includes("tudo") || grupos.includes(g);
 
 if (quer("tcgdex")) {
   const series = await get("https://api.tcgdex.net/v2/pt/series", { n: 3000 });
@@ -122,4 +122,28 @@ if (quer("fontes2")) {
   for (const t of ["Ash Ketchum", "Misty", "Brock", "Gary Oak", "Jessie", "Dawn", "May", "Serena", "Goh", "Liko", "Roy", "Red"])
     await get("https://pokemon.fandom.com/api.php?action=query&prop=pageimages&piprop=original|name&format=json&titles=" + encodeURIComponent(t), { n: 500 });
   await get("https://pokemon.fandom.com/api.php?action=query&list=allimages&aiprefix=Ash_JN&aiprop=url|size|mime&ailimit=20&format=json", { n: 2500 });
+}
+if (quer("worlds")) {
+  const h = await (await fetch("https://limitlesstcg.com/tournaments/500", { headers: { "User-Agent": UAS.chrome } })).text();
+  console.log("\n### /tournaments/500 tamanho", h.length);
+  const i = h.indexOf("<table");
+  console.log(h.slice(i, i + 3500));
+  const links = [...h.matchAll(/href="(\/decks\/list\/[^"]+)"/g)].map((m) => m[1]);
+  console.log("listas:", links.slice(0, 5));
+  if (links[0]) {
+    const d = await (await fetch("https://limitlesstcg.com" + links[0], { headers: { "User-Agent": UAS.chrome } })).text();
+    const j = d.indexOf("decklist");
+    console.log("\n### lista", links[0], d.length);
+    console.log(d.slice(j - 200, j + 4000));
+  }
+  const t = await (await fetch("https://limitlesstcg.com/tournaments?time=all&show=500", { headers: { "User-Agent": UAS.chrome } })).text();
+  console.log("\n### mundiais:", [...t.matchAll(/<tr[^>]*data-name="([^"]*World[^"]*)"[^>]*data-winner="([^"]*)"[\s\S]{0,400}?href="(\/tournaments\/\d+)"/g)].map((m) => `${m[1]} | ${m[2]} | ${m[3]}`).join("\n"));
+}
+if (quer("tcgcsv")) {
+  const g = await (await fetch("https://tcgcsv.com/tcgplayer/3/groups")).json();
+  const base = g.results.find((x) => x.name === "Base Set");
+  console.log("Base Set:", JSON.stringify(base));
+  const p = await (await fetch(`https://tcgcsv.com/tcgplayer/3/${base.groupId}/products`)).json();
+  console.log(p.results.filter((x) => /deck|theme/i.test(x.name)).slice(0, 8).map((x) => JSON.stringify({ n: x.name, id: x.productId, img: x.imageUrl })).join("\n"));
+  console.log("nomes de grupos com Deck:", g.results.filter((x) => /deck|theme|battle academy|league/i.test(x.name)).map((x) => x.name).join(" | "));
 }
