@@ -1165,3 +1165,18 @@ h3 small{font:500 .74rem var(--mono);letter-spacing:0;color:var(--muted);text-tr
   .toolbar .tsel{display:none;grid-column:1/-1;grid-row:3}
   .toolbar.fopen .tsel{display:grid}
 }
+/* Carregando: Poké Bola balançando (como numa captura) */
+.poke-loader{display:flex;flex-direction:column;align-items:center;gap:14px;padding:44px 16px;text-align:center}
+.poke-loader b{font:600 1rem var(--head);color:var(--ink)}
+.poke-loader small{color:var(--muted);font-size:.84rem;margin-top:-8px}
+.pl-ball{width:64px;height:64px;transform-origin:50% 90%;animation:pl-wobble 1.6s ease-in-out infinite}
+.pl-btn{animation:pl-blink 1.6s ease-in-out infinite}
+@keyframes pl-wobble{0%,55%,100%{transform:rotate(0)}10%{transform:rotate(-16deg)}22%{transform:rotate(14deg)}34%{transform:rotate(-8deg)}44%{transform:rotate(4deg)}}
+@keyframes pl-blink{0%,60%,100%{opacity:1}70%,90%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.pl-ball,.pl-btn{animation:none}}
+/* Vitrine: arte do Pokémon principal = recorte da parte de cima da carta de capa */
+.deck-art{position:absolute;inset:0;overflow:hidden;display:block}
+.deck-art img{position:absolute;width:150%;left:-25%;top:-14%;height:auto;max-width:none;transition:transform .4s ease}
+.deck:hover .deck-art img{transform:scale(1.04)}
+.deck-art .ph{display:none}
+.deck:hover .deck-art{transform:none}

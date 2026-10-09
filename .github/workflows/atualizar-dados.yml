@@ -31,12 +31,14 @@ jobs:
         with:
           node-version: 22
       - name: Gerar
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           npm i --no-save --no-package-lock sharp
           LISTA="${{ inputs.scripts }}"
           # sem entrada (push do arquivo de pedido): a lista vem de .github/dados-pedido.txt
           if [ -z "$LISTA" ]; then LISTA="$(cat .github/dados-pedido.txt)"; fi
-          for s in $LISTA; do echo "===== $s ====="; node "scripts/$s"; done
+          for s in $LISTA; do echo "===== $s ====="; node "scripts/$s" || echo "::warning::FALHOU: $s"; done
       - name: Gravar no repositório
         run: |
           git config user.name "github-actions[bot]"

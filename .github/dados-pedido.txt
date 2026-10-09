@@ -1,1 +1,1 @@
-gerar-catalogo.mjs 
+gerar-catalogo.mjs gerar-personagens.mjs gerar-meta.mjs gerar-oficiais.mjs baixar-retratos.mjs

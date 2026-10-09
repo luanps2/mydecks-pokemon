@@ -6,6 +6,9 @@ import { Catalog, presetCatalogQuery } from "./components/Catalog";
 import { DeckPicker } from "./components/DeckPicker";
 import { DetailModal, type DetailView } from "./components/DetailModal";
 import { GlobalBehaviors } from "./components/GlobalBehaviors";
+import { Hero } from "./components/Hero";
+import { Presets } from "./components/Presets";
+import { Suggestions } from "./components/Suggestions";
 import { Logo } from "./components/Logo";
 import { ManageLists } from "./components/ManageLists";
 import { Modal } from "./components/Modal";
@@ -109,7 +112,9 @@ function Main() {
   // fechar uma janela só limpa o estado se ela ainda for a aberta: ao trocar de janela (ex.: do catálogo para
   // Meus decks pelo menu de baixo), o aviso de "fechei" da anterior chega depois e não pode desfazer a troca
   const closeDlg = useCallback((k: string) => setDlg((d) => (d === k ? "" : d)), []);
-  const openPresets = useCallback(() => setOver("presets"), []);
+  const [presetInit, setPresetInit] = useState<string | undefined>();   // tema escolhido na vitrine
+  const openPresets = useCallback((nome?: string) => { setPresetInit(typeof nome === "string" ? nome : undefined); setOver("presets"); }, []);
+  const closeOver = useCallback((k: string) => setOver((o) => (o === k ? "" : o)), []);
   const [hideUpload, setHideUpload] = useState(() => readJSON("mdp-esconder-envio", false));
   const pickTab = (id: string) => { setTab(id); writeJSON("mdp-deck", id); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
@@ -172,7 +177,7 @@ function Main() {
       {supabase ? (
         <button type="button" aria-current={dlg === "community" ? "page" : undefined} onClick={() => setDlg("community")}>{ICON_PEOPLE}<span>Treinadores</span></button>
       ) : (
-        <button type="button" aria-current={over === "presets" ? "page" : undefined} onClick={openPresets}>{ICON_STAR}<span>Prontos</span></button>
+        <button type="button" aria-current={over === "presets" ? "page" : undefined} onClick={() => openPresets()}>{ICON_STAR}<span>Prontos</span></button>
       )}
       <button type="button" className="bn-add" aria-current={dlg === "catalog" ? "page" : undefined} onClick={() => setDlg("catalog")}>
         <span className="bn-plus">{ICON_PLUS}</span><span>Adicionar</span>
@@ -216,12 +221,19 @@ function Main() {
         <div className="wrap deck-row">
           <DeckPicker lists={lists} counts={counts} total={totalCopies} value={tabOk} onChange={pickTab} onManage={() => setDlg("lists")} />
           <nav className="actions" aria-label="Ações">
-            <button type="button" className="btn soft" onClick={openPresets} title="Decks dos personagens do anime, decks oficiais e decks campeões">{ICON_STAR}<span>Decks prontos</span></button>
+            <button type="button" className="btn soft" onClick={() => openPresets()} title="Decks dos personagens do anime, decks oficiais e decks campeões">{ICON_STAR}<span>Decks prontos</span></button>
             <button type="button" className="btn soft" onClick={() => setOver("export")} title="Baixar os seus decks em Excel, texto ou no formato do Pokémon TCG Live">{ICON_DOWN}<span>Exportar<span className="xl"> decks</span></span></button>
             <button type="button" className="btn act" onClick={() => setDlg("catalog")} title="Escolher cartas no catálogo completo">{ICON_PLUS}<span>Adicionar cartas</span></button>
           </nav>
         </div>
       </header>
+
+      {!nq && (
+        <div className="wrap">
+          <Hero onPresets={openPresets} onCatalog={() => setDlg("catalog")} />
+          <Suggestions defaultList={tabOk} onOpen={openHits} />
+        </div>
+      )}
 
       <div className={"wrap toolbar" + (fOpen ? " fopen" : "")}>
         <div className="chips" role="group" aria-label="Filtrar por tipo de carta">
@@ -288,7 +300,7 @@ function Main() {
               <p>Monte decks com as cartas que você tem, as que quer comprar ou de qualquer tema. É grátis.</p>
               <div className="welcome-acts">
                 <button type="button" className="btn act" onClick={() => setDlg("catalog")}>Adicionar cartas</button>
-                <button type="button" className="btn" onClick={openPresets}>Ver decks prontos</button>
+                <button type="button" className="btn" onClick={() => openPresets()}>Ver decks prontos</button>
                 <button type="button" className="btn ghost" onClick={() => setDlg("lists")}>Criar um deck vazio</button>
               </div>
             </> : <>
@@ -297,7 +309,7 @@ function Main() {
               <div className="welcome-acts">
                 <button type="button" className="btn act" onClick={() => setNeedLogin(true)}>Criar conta grátis</button>
                 <button type="button" className="btn ghost" onClick={() => setDlg("login")}>Entrar</button>
-                <button type="button" className="btn" onClick={openPresets}>Ver decks prontos</button>
+                <button type="button" className="btn" onClick={() => openPresets()}>Ver decks prontos</button>
                 <button type="button" className="btn ghost" onClick={() => setDlg("catalog")}>Ver o catálogo</button>
               </div>
             </>}
@@ -332,8 +344,9 @@ function Main() {
 
       <CardModal cardId={cardId} numbers={numbers} onClose={() => setCardId(null)} onStep={step}
         canPrev={idx > 0} canNext={idx >= 0 && idx < order.length - 1} onOpenRelated={openHits} />
-      <Catalog open={dlg === "catalog"} onClose={() => closeDlg("catalog")} defaultList={tabOk} onPresets={openPresets} footer={bottomNav} />
-      <ManageLists open={dlg === "lists"} onClose={() => closeDlg("lists")} onPresets={openPresets} />
+      <Catalog open={dlg === "catalog"} onClose={() => closeDlg("catalog")} defaultList={tabOk} onPresets={() => openPresets()} footer={bottomNav} />
+      <ManageLists open={dlg === "lists"} onClose={() => closeDlg("lists")} onPresets={() => openPresets()} />
+      <Presets open={over === "presets"} initial={presetInit} onOpenCard={openHits} onClose={() => closeOver("presets")} />
       <DetailModal view={det} onClose={() => setDet(null)} defaultDest={tabOk}
         onIndex={(i) => setDet((d) => (d ? { ...d, index: Math.max(0, Math.min(i, d.items.length - 1)) } : d))} />
       {mode.kind === "cloud" && (
