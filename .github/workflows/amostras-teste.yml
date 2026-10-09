@@ -1,0 +1,49 @@
+# Baixa imagens e dados reais de algumas coleções para testar o site no navegador dentro das sessões na nuvem
+# (que não acessam a TCGdex). Grava no ramo "amostras-teste", separado do main (não vai para o site).
+name: Amostras para testes
+
+on:
+  workflow_dispatch:
+    inputs:
+      colecoes:
+        description: "Coleções (ids da TCGdex), separadas por vírgula"
+        default: "sv03.5,base1,me02.5,sv08,swsh7"
+      alta:
+        description: "Coleções ou cartas com a imagem grande também"
+        default: "sv03.5"
+      ids:
+        description: "Cartas avulsas (ids), separadas por vírgula"
+        default: ""
+  push:
+    branches: [main]
+    paths: [".github/amostras-pedido.txt"]
+
+permissions:
+  contents: write
+
+jobs:
+  baixar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Baixar
+        env:
+          AMOSTRA_COLECOES: ${{ inputs.colecoes }}
+          AMOSTRA_ALTA: ${{ inputs.alta || 'sv03.5' }}
+          AMOSTRA_IDS: ${{ inputs.ids }}
+        run: |
+          if [ -z "$AMOSTRA_COLECOES" ] && [ -f .github/amostras-pedido.txt ]; then
+            export AMOSTRA_COLECOES="$(sed -n 1p .github/amostras-pedido.txt)"; export AMOSTRA_IDS="$(sed -n 2p .github/amostras-pedido.txt)"
+          fi
+          node scripts/amostras-teste.mjs
+      - name: Gravar no ramo amostras-teste
+        run: |
+          cd amostras
+          git init -q -b amostras-teste
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -qm "Amostras para testes"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" amostras-teste
