@@ -1,0 +1,48 @@
+# Gera os arquivos de dados (catálogo, decks prontos, populares, retratos…) e grava no repositório como reserva.
+# A publicação diária (deploy.yml) gera o catálogo e os preços de novo sem gravar; este workflow é para quando
+# algo muda de verdade (coleção nova, decks prontos, retratos). Rodar pela aba Actions → "Atualizar dados" → "Run workflow".
+name: Atualizar dados
+
+on:
+  workflow_dispatch:
+    inputs:
+      scripts:
+        description: "Scripts a rodar, separados por espaço (ex.: gerar-catalogo.mjs gerar-meta.mjs)"
+        required: true
+        default: "gerar-catalogo.mjs"
+  push:
+    branches: [main]
+    paths: [".github/dados-pedido.txt"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dados
+  cancel-in-progress: false
+
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Gerar
+        run: |
+          npm i --no-save --no-package-lock sharp
+          LISTA="${{ inputs.scripts }}"
+          # sem entrada (push do arquivo de pedido): a lista vem de .github/dados-pedido.txt
+          if [ -z "$LISTA" ]; then LISTA="$(cat .github/dados-pedido.txt)"; fi
+          for s in $LISTA; do echo "===== $s ====="; node "scripts/$s"; done
+      - name: Gravar no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add public scripts/saida 2>/dev/null || true
+          if git diff --cached --quiet; then echo "Nada mudou."; exit 0; fi
+          git commit -m "Dados atualizados ($(cat .github/dados-pedido.txt 2>/dev/null | head -c 80))"
+          for i in 1 2 3; do git pull --rebase -q && git push && exit 0; sleep 5; done
+          exit 1
