@@ -133,7 +133,7 @@ if (quer("worlds")) {
   if (links[0]) {
     const d = await (await fetch("https://limitlesstcg.com" + links[0], { headers: { "User-Agent": UAS.chrome } })).text();
     const b = d.indexOf("<body");
-    const k = d.search(/Pok[eé]mon \(\d+\)|decklist-column|data-set=|class="decklist/);
+    const k = d.indexOf("decklist-main") + 200;
     console.log("\n### lista", links[0], d.length, "posição", k);
     console.log(d.slice(Math.max(b, k - 300), k + 3500));
   }
