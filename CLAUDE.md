@@ -55,6 +55,30 @@ O ambiente das sessões na nuvem do Claude **não acessa** essas APIs (o proxy r
 - `lib/images.ts`: ordem das imagens: imagem própria → R2 (se houver) → TCGdex português → TCGdex inglês → pokemontcg.io.
 - `components/GlobalBehaviors.tsx`: prévia ampliada ao passar o mouse (troca `low.webp` por `high.webp`) e faixas horizontais com roda do mouse/arrastar.
 
+## Decks prontos (`src/lib/presets.ts`, `components/Presets.tsx`, `Hero.tsx`)
+- Arquivos: `public/data/decks-personagens.json`, `decks-oficiais.json`, `decks-meta.json` (cada um falha sozinho se faltar). Tema = `{ nome, grupo, era, desc, cartas: [[id, cópias]], capa, retrato?, caixa?, data? }`. Coleções completas (`filtro`: coleção ou série) são montadas no site com o catálogo; acima de 300 cartas pede confirmação. Custo médio para montar = soma das cópias × menor valor (calculado no site).
+- **Personagens** (13): `scripts/personagens.mjs` (lista "quantidade Nome em inglês", `*` = capa, `@coleção` opcional) → `node scripts/gerar-personagens.mjs` (sem internet) escolhe a versão: com imagem em português, com imagem, legal no Expandido, **a mais barata**, a mais nova; confere 60 cartas e até 4 cópias. Usa as cartas oficiais "de treinador" (Misty's, Brock's, Team Rocket's, Cynthia's…). Misty e Brock ficam mais caros porque muitas cartas deles só existem nas coleções Gym (2000).
+- **Retratos**: `scripts/baixar-retratos.mjs` (Fandom, imagem principal da página; `RETRATOS_ARQUIVOS`/`RETRATOS_APENAS`) → `public/img/personagens/{chave}.png` (520px, fundo transparente).
+- **Oficiais** (188 Theme Decks, 131 com caixa): `scripts/gerar-oficiais.mjs` (pokemon-tcg-data; foto do produto no tcgcsv, que **exige User-Agent com o nome do app**: "MyDeckPokemon/1.0 (+site)"; fundo branco apagado a partir das bordas) → `public/img/caixas/{id}.png`. Na janela ficam separados por série (a série da maioria das cartas).
+- **Meta e campeões**: `scripts/gerar-meta.mjs`: 60 maiores torneios Padrão dos últimos 35 dias (≥32 jogadores) na play.limitlesstcg.com; os 16 arquétipos mais frequentes entre os melhores colocados (top 12,5%, mínimo 8), com a lista de melhor colocação no maior torneio. Campeões mundiais 2017–2026 pelas páginas HTML do limitlesstcg.com (`decklist-card data-set data-number … card-count … card-name`). Siglas de coleção → TCGdex por `sets[].ab`; nomes "Dedenne-GX" = "Dedenne GX" (normalizar o hífen). Gera também `populares.json` (500 cartas mais usadas nessas listas; Energia Básica fora) para as "Sugestões para você".
+- Carregando = `PokeLoader` (Poké Bola balançando e frases de batalha). Vitrine: 8 decks de personagens com a arte da carta de capa (recorte da imagem grande) e o retrato.
+
+## Conta, nuvem e Treinadores (etapa 4)
+- `supabase/schema.sql`: arquivo único para colar no SQL Editor (tabelas `profiles`, `lists`, `list_cards` com `card_id` texto e `image_lang`; RLS; perfis visíveis a todos; decks públicos por padrão; gatilho que cria o perfil com nome e foto do Google; preenchimento das contas antigas; bucket `card-images`; termina com uma conferência). Passo a passo do Supabase, dos secrets e do Google no `README.md`.
+- `components/LoginDialog.tsx` (Google, e-mail e senha com confirmação, "Esqueci a senha" + `PasswordRecovery`, link mágico, mensagens traduzidas), `components/Community.tsx` + `lib/social.ts` (Treinadores: todos os perfis, busca, perfil com decks em abas, "Copiar para os meus decks" com as cópias, link `#treinador/{id}`, nome do perfil editável). `syncMyProfile` grava nome/foto do Google ao entrar.
+- Testado com o Supabase simulado no Playwright (respostas falsas em `page.route`), porque o projeto real ainda não existia.
+
+## Valor de mercado, painel, exportar e app
+- Etiqueta "menor – maior" (`PriceTag`) embaixo de todas as miniaturas; `PriceLine` na janela da carta (preço por variante no TCGplayer, Cardmarket com média/mínimo/tendência/30 dias, cotação); "≈ R$" no título de cada deck; filtro por faixa de valor nos decks e no catálogo.
+- `components/Dashboard.tsx`: totais (cartas = cópias, cartas diferentes = nomes), composição, cartas por deck, tipos de energia, estágios, curva de HP, Treinadores e Energias, raridades, coleções, cartas mais valiosas; filtro por deck, modo tabela, dica ao passar o mouse. Cores validadas com o validador do skill dataviz: Pokémon `#2a78d6`/`#3987e5`, Treinador `#eb6834`/`#d95926`, Energia `#1baf7a`/`#199e70` (o verde-água tem pouco contraste no claro: por isso os valores ficam escritos e há a tabela).
+- `lib/exporter.ts` + `components/ExportDialog.tsx`: Excel (SheetJS 0.18.5 na hora), texto e **lista do Pokémon TCG Live** ("4 Pikachu MEW 25", blocos Pokémon/Trainer/Energy, Energia Básica como "Basic {L} Energy SVE 4"; baixa e copia).
+- PWA: `public/manifest.webmanifest`, ícones gerados do logo (sharp), `public/sw.js` (só arquivos do próprio site; trocar `VERSAO` ao mudar a lógica), `components/InstallApp.tsx`.
+
+## Pendências e ideias
+- Espelho das imagens no Cloudflare R2 (opcional): o site já aceita `VITE_R2_URL` (`img/{pt|en}/{300|700}/{id}.webp`); falta o workflow que envia as imagens.
+- 57 decks oficiais sem foto da caixa (o tcgcsv não tem o produto com o mesmo nome).
+- A `node_modules` entrou num commit antigo (já removida; continua no histórico). Limpar só com autorização do Luan (exige reescrever a `main`).
+
 ## Visual
 - Neutro e limpo (fundo `#f6f5f2`, superfícies brancas; escuro grafite automático), sem degradês exagerados nem animações em cascata. Destaque vermelho da Poké Bola (`--accent` `#e3350d`, escuro `#ff6a4d`) só para seleção, foco e detalhes; verde só na ação principal de cada área. Fontes Bricolage Grotesque (títulos) e Geist/Geist Mono.
 - Ícone próprio (`components/Logo.tsx` e `public/favicon.svg`): carta escura com um círculo vermelho e branco. Não usar logotipos oficiais.

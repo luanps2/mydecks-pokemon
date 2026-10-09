@@ -1188,3 +1188,9 @@ h3 small{font:500 .74rem var(--mono);letter-spacing:0;color:var(--muted);text-tr
 :root[data-theme="dark"] .dash{--c-p:#3987e5;--c-t:#d95926;--c-e:#199e70;--c-x:#4a4a4f;--c-1:#3987e5}
 .sw-p{background:var(--c-p)}.sw-t{background:var(--c-t)}.sw-e{background:var(--c-e)}
 .tile-money b{font-size:1.45rem;white-space:nowrap}
+/* treinador sem decks públicos: três cartas de costas (verso azul com o círculo vermelho e branco) */
+.cm-backs i{border:3px solid #13306a;background:
+  radial-gradient(circle at 50% 50%,#fff 0 9%,#1d1b20 9.5% 13%,transparent 13.5%),
+  linear-gradient(180deg,transparent 47%,#1d1b20 47% 53%,transparent 53%),
+  radial-gradient(circle at 50% 50%,#e3350d 0 30%,transparent 30.5%),
+  linear-gradient(160deg,#2c63c4,#173e8a)}
